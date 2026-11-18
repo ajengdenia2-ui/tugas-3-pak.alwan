@@ -1,0 +1,29 @@
+
+name: Build C++ EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup MinGW
+        uses: egor-tensin/setup-mingw@v2
+
+      - name: Compile C++
+        run: |
+          g++ main.cpp -o main.exe -static -O2 -std=c++17
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-exe
+          path: main.exe
