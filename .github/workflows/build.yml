@@ -1,57 +1,49 @@
 
-name: C++ Windows EXE Builder
+name: Build EXE
 
 on:
-  push:
-    branches: [ "main" ]
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Compile Windows x64
     runs-on: windows-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install MinGW-w64
+      - name: Install MSYS2
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
           install: mingw-w64-x86_64-gcc
 
-      - name: Compile C++ to EXE
+      - name: Compile
         shell: msys2 {0}
         run: |
-          mkdir -p build
+          g++ --version
+          g++ -std=c++17 -O2 -static main.cpp -o program.exe
 
-          g++ -std=c++17 \
-              -O2 \
-              -static \
-              -static-libgcc \
-              -static-libstdc++ \
-              -Iinclude \
-              src/main.cpp \
-              -o build/MyProgram.exe
-
-      - name: Verify EXE
+      - name: Check EXE
         shell: pwsh
         run: |
-          if (!(Test-Path "build/MyProgram.exe")) {
-            throw "EXE file not found!"
+          if (-not (Test-Path "program.exe")) {
+            Write-Error "Compilation failed!"
+            exit 1
           }
 
-          Get-Item "build/MyProgram.exe"
+          Write-Host "EXE successfully created!"
 
-      - name: Upload EXE Artifact
+      - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: MyProgram-Windows-x64
-          path: build/MyProgram.exe
+          name: Windows-EXE
+          path: program.exe
           if-no-files-found: error
-          retention-days: 30
