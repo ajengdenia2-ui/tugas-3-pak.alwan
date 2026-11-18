@@ -1,29 +1,57 @@
 
-name: Build C++ EXE
+name: C++ Windows EXE Builder
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Compile Windows x64
     runs-on: windows-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup MinGW
-        uses: egor-tensin/setup-mingw@v2
+      - name: Install MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
 
-      - name: Compile C++
+      - name: Compile C++ to EXE
+        shell: msys2 {0}
         run: |
-          g++ main.cpp -o main.exe -static -O2 -std=c++17
+          mkdir -p build
 
-      - name: Upload EXE
+          g++ -std=c++17 \
+              -O2 \
+              -static \
+              -static-libgcc \
+              -static-libstdc++ \
+              -Iinclude \
+              src/main.cpp \
+              -o build/MyProgram.exe
+
+      - name: Verify EXE
+        shell: pwsh
+        run: |
+          if (!(Test-Path "build/MyProgram.exe")) {
+            throw "EXE file not found!"
+          }
+
+          Get-Item "build/MyProgram.exe"
+
+      - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-exe
-          path: main.exe
+          name: MyProgram-Windows-x64
+          path: build/MyProgram.exe
+          if-no-files-found: error
+          retention-days: 30
